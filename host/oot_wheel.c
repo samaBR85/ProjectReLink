@@ -17,6 +17,7 @@
 #include "hos.h"
 #include "hos_paths.h"   /* (the game folder: wheel_layout.txt) */
 #include "../gpu/vk/vk_api.h"
+#include "../gpu/vk/oot_wheel_api.h"
 #include "../gpu/vk/oot_cheat_items.h"
 #include <math.h>
 #include <stdio.h>

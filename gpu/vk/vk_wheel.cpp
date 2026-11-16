@@ -20,6 +20,7 @@
 
 #include "vk_paths.h"
 #include "vk_wheel.h"
+#include "oot_wheel_api.h"
 #include "vk_internal.h"
 #include "vk_menu.h"
 #include "video_core/textures/astc.h"
@@ -452,6 +453,7 @@ void label(Canvas& c, const char* s, int px, float cx, float cy, float width, co
 }
 
 // ---- the wheel ----
+std::atomic<relink_wheel_source_fn> wheel_source{nullptr};   // (the host's: relink_wheel_source, below)
 MkwVkWheel now;               // (the state drawn: wheel_update)
 float spread = 1.0f;          // (the opening's animation: the slots' distance from the centre, 0.35 to 1)
 constexpr float kBannerGap = 3, kBannerHalf = 3;   // (units: the gap above the name banner, its half height)
@@ -461,7 +463,8 @@ constexpr float kBannerGap = 3, kBannerHalf = 3;   // (units: the gap above the 
 bool wheel_update(bool* changed) {
     *changed = false;
     if (!opts.item_wheel && !getenv("HOS_ITEM_WHEEL")) return false;
-    const MkwVkWheel* src = host && host->wheel ? host->wheel() : nullptr;
+    const relink_wheel_source_fn source = wheel_source.load(std::memory_order_acquire);
+    const MkwVkWheel* src = source ? source() : nullptr;
     constexpr int64_t kSpreadNs = 160000000;
     static int64_t opened_at = 0;
     static bool shown = false;
@@ -661,3 +664,13 @@ bool wheel_picture(uint32_t pw, uint32_t ph, WheelPicture* out) {
 }
 
 }  // namespace mkwvk
+
+// (relink) the host's function for the item wheel's state (host/rx_backend.c, looked up by name when the back end is loaded, so
+// the back end's interface, vk_api.h, part of the shader caches' stamp, stays as it is)
+extern "C"
+#ifdef _WIN32
+__declspec(dllexport)
+#else
+__attribute__((visibility("default")))
+#endif
+void relink_wheel_source(relink_wheel_source_fn fn) { mkwvk::wheel_source.store(fn, std::memory_order_release); }

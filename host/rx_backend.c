@@ -11,6 +11,7 @@
 
 #include "../gpu/vk/vk_api.h"
 #include "../gpu/vk/dlss_math.h"
+#include "../gpu/vk/oot_wheel_api.h"   /* (relink: the item wheel) */
 
 /* the WebGPU renderer (gpu/render, renamed) */
 int wgr_start(void *hwnd);
@@ -175,7 +176,6 @@ static const MkwVkHost vk_host = {
     hos_gpu_maps_generation, nvn_vmap_generation, hos_reserved_cpus, host_collect_in, host_guest_alloc,
     host_watch_guest_writes, hos_pad_raw, hos_binding, hos_bind, host_aspect_ratio, host_take_key_press,
     hos_mouse_pointer, hos_mic_count, hos_mic_name, hos_mic_select, hos_sdl_gyro_status, host_region_release_gaps,
-    hos_wheel_state,
 };
 
 static const MkwVkRenderer *vk;   /* the Vulkan back end, when it was chosen and started */
@@ -276,6 +276,9 @@ static const MkwVkRenderer *load_vulkan(const char *dll) {
     mkwvk_init_fn init = (mkwvk_init_fn)(void *)GetProcAddress(m, "mkwvk_init");
     /* (relink) the back end's own extra entry, when it has it: compute programs made ahead of their first dispatch */
     program_set_fn = (void (*)(const nvn_prog *))(void *)GetProcAddress(m, "relink_program_set");
+    /* (relink) and the item wheel's state given to it (gpu/vk/oot_wheel_api.h) */
+    void (*wheel_source)(relink_wheel_source_fn) = (void (*)(relink_wheel_source_fn))(void *)GetProcAddress(m, "relink_wheel_source");
+    if (wheel_source) wheel_source(hos_wheel_state);
     const MkwVkRenderer *r = init ? init(&vk_host) : NULL;
     if (!r || r->version != MKWVK_API_VERSION) {
         hos_log("rx: the Vulkan back end did not start: WebGPU");

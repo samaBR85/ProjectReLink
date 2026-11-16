@@ -28,6 +28,7 @@
 #include <unordered_set>
 
 #include "vk_dlss.h"
+#include "oot_wheel_api.h"   // (relink: the item wheel's rows)
 #include "status_line.h"
 #include "vk_reflex.h"
 #include "vk_draw.h"
